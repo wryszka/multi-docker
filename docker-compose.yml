@@ -1,0 +1,58 @@
+version: '3'
+services:
+    postgres:
+        image: postgres:latest
+        environment:
+            - POSTGRES_PASSWORD=postgres_password # this is a variable passed to postgres
+    redis:
+        image: redis:latest
+    api:
+        depends_on: 
+            - postgres
+            - redis
+        build:
+            dockerfile: Dockerfile.dev #just name, folder below
+            context: ./server  #this is location of the above
+        volumes:
+            - /app/node_modules  # leave this folder as is, do not recreate/overwrite it
+            - ./server:/app #this redirects to /app in our server folder
+# some variables are required as this is described in the application, so we need to pass them 
+        environment:
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - PGUSER=postgres
+            - PGHOST=postgres
+            - PGDATABASE=postgres
+            - PGPASSWORD=postgres_password
+            - PGPORT=5432
+    client:
+        build:
+            dockerfile: Dockerfile.dev #just name, folder below
+            context: ./client  #this is location of the above
+        volumes:
+            - /app/node_modules  # leave this folder as is, do not recreate/overwrite it
+            - ./client:/app #this redirects to /app in our server folder    
+    worker:
+        build:
+            dockerfile: Dockerfile.dev #just name, folder below
+            context: ./worker  #this is location of the above
+        volumes:
+            - /app/node_modules  # leave this folder as is, do not recreate/overwrite it
+            - ./worker:/app #this redirects to /app in our server folder    
+        environment:
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+    #to this point no ports are exposed, thus we cannot connect to any of the services, the n
+    #nginx is required to pass traffic to the deployment, it needs some routing here too
+    # any time the request comes, it will pass it to relevant api. we need to create 
+    # a default.conf which needs to be pushed into nginx
+    nginx:    
+        depends_on: 
+            - api
+            - client
+        restart: always
+        build:
+            dockerfile: Dockerfile.dev #just name, folder below
+            context: ./nginx  #this is location of the above
+        ports:
+            - '3000:80'
