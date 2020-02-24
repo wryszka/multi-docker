@@ -8,7 +8,7 @@ script:
     - docker run underfrykte/react-test npm test -- --coverage
 
 #image building
-    after_success:
+after_success:
     - docker build -t underfrykte/multi-client ./client
     - docker build -t underfrykte/multi-server ./server
     - docker build -t underfrykte/multi-nginx ./nginx
