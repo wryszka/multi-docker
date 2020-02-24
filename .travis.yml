@@ -1,0 +1,22 @@
+sudo: required
+services:
+    - docker
+
+before_install:
+    - docker_build -t underfrykte/react-test -f ./client/Dockerfile.dev ./client
+script:
+    - docker run underfrykte/react-test npm test -- --coverage
+
+#image building
+    after_success:
+    - docker build -t underfrykte/multi-client ./client
+    - docker build -t underfrykte/multi-server ./server
+    - docker build -t underfrykte/multi-nginx ./nginx
+    - docker build -t underfrykte/multi-worker ./worker
+    #push these images to docker hub
+    #log into docker CLI using travis variables, first set variables in travis, then use them here
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+    - docker push underfrykte/multi-client
+    - docker push underfrykte/multi-nginx
+    - docker push underfrykte/multi-worker
+    - docker push underfrykte/multi-server
